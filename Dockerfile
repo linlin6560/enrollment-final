@@ -5,6 +5,7 @@ WORKDIR /app
 # 安装依赖
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir flask-ckeditor==0.4.6
 
 # 复制应用代码
 COPY . .
