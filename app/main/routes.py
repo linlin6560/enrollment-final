@@ -7,7 +7,19 @@ from app.models.post import Post, Category
 from app.main.forms import PostForm
 from app.services.ai_service import AIService
 from flask import Response, stream_with_context
-from app.decorators import role_required  # 添加这行导入
+from app.decorators import role_required
+from datetime import datetime
+from app.models.seller import Seller
+from app.models import User
+from app.models import Team  # 添加这行导入
+
+# 在文件顶部添加这些导入（如果尚未存在）
+from flask import render_template, redirect, url_for, flash, request
+from flask_login import login_required, current_user
+from app import db
+from app.main import bp
+from app.models.seller import Seller
+from app.models.seller_assignment import SellerAssignment
 from datetime import datetime
 
 @bp.route('/')  # 修改所有的 @main 为 @bp
@@ -300,86 +312,156 @@ def create_application():
         return redirect(url_for('main.index'))
     return render_template('main/create_application.html', form=form)
 
-# 删除这部分重复的代码，它导致了循环导入
-# from flask import render_template, redirect, url_for, flash, request
-# from flask_login import login_required, current_user
-# from app.main import main  # 这行导致了循环导入
-# from app.models.post import Post
-# from datetime import datetime
-
-# @main.route('/')
-# @main.route('/index')
-# def index():
-#     # 获取文章列表
-#     posts = Post.query.order_by(Post.created_at.desc()).limit(5).all()
-#     
-#     # 添加首页需要的变量
-#     now = datetime.now()
-#     
-#     # 这些是示例数据，实际应用中应该从数据库获取
-#     pending_tasks = 5
-#     completed_tasks = 12
-#     total_sellers = 150
-#     recent_activities_count = 8
-#     
-#     # 示例待办事项列表
-#     todo_list = [
-#         {
-#             'id': 1,
-#             'type': 'approval',
-#             'title': '新卖家审批',
-#             'seller_id': 'S12345',
-#             'seller_name': '北京科技有限公司',
-#             'created_at': '2025-03-10',
-#             'due_date': '2025-03-15',
-#             'priority': 'high'
-#         },
-#         {
-#             'id': 2,
-#             'type': 'assignment',
-#             'title': 'AM分配任务',
-#             'seller_id': 'S12346',
-#             'seller_name': '上海贸易有限公司',
-#             'created_at': '2025-03-11',
-#             'due_date': '2025-03-16',
-#             'priority': 'medium'
-#         }
-#     ]
-#     
-#     # 示例最近活动列表
-#     recent_activities_list = [
-#         {
-#             'title': '完成卖家审批',
-#             'description': '已审批通过 S12340 上海电子科技',
-#             'time': '1小时前',
-#             'user': '管理员'
-#         },
-#         {
-#             'title': '分配AM',
-#             'description': '将 S12338 分配给 张经理',
-#             'time': '3小时前',
-#             'user': '系统'
-#         }
-#     ]
-#     
-#     return render_template('main/index.html', 
-#                           posts=posts,
-#                           now=now,
-#                           pending_tasks=pending_tasks,
-#                           completed_tasks=completed_tasks,
-#                           total_sellers=total_sellers,
-#                           recent_activities=recent_activities_count,
-#                           todo_list=todo_list,
-#                           recent_activities_list=recent_activities_list)
-
-@bp.route('/from-team-assignment')
+@bp.route('/from_team_assignment')
 @login_required
 @role_required('from_team_assignment_poc')
 def from_team_assignment():
-    # 实现 From-team AM Assignment POC 的功能
-    return render_template('main/from_team_assignment.html')
+    """From-team AM Assignment POC 页面"""
+    page = request.args.get('page', 1, type=int)
+    status = request.args.get('status', '')
+    search = request.args.get('search', '')
+    
+    # 构建查询
+    query = Seller.query
+    
+    # 应用状态筛选
+    if status:
+        query = query.filter(Seller.status == status)
+    
+    # 应用搜索条件
+    if search:
+        query = query.filter(
+            (Seller.seller_id.like(f'%{search}%')) | 
+            (Seller.seller_name.like(f'%{search}%'))
+        )
+    
+    # 获取分页数据
+    sellers = query.order_by(Seller.created_at.desc()).paginate(
+        page=page, per_page=10, error_out=False
+    )
+    
+    # 获取团队和AM用户列表（用于分配表单）
+    teams = Team.query.all()
+    am_users = User.query.filter(User.team_id.isnot(None)).all()
+    
+    # 统计数据
+    stats = {
+        'pending_count': Seller.query.filter_by(status='待分配').count(),
+        'assigned_count': Seller.query.filter_by(status='已分配').count(),
+        'rejected_count': Seller.query.filter_by(status='已拒绝').count()
+    }
+    
+    return render_template(
+        'main/from_team_assignment.html',
+        sellers=sellers,
+        teams=teams,
+        am_users=am_users,
+        stats=stats
+    )
+
+@bp.route('/assign_seller/<string:seller_id>', methods=['POST'])
+@login_required
+@role_required('from_team_assignment_poc')
+def assign_seller(seller_id):
+    """分配卖家给AM"""
+    seller = Seller.query.filter_by(seller_id=seller_id).first_or_404()
+    am_id = request.form.get('am_id', type=int)
+    note = request.form.get('note', '')
+    
+    if not am_id:
+        flash('请选择AM', 'danger')
+        return redirect(url_for('main.from_team_assignment'))
+    
+    # 创建分配记录
+    assignment = SellerAssignment(
+        seller_id=seller_id,
+        am_user_id=am_id,
+        assigned_at=datetime.now(),
+        assigned_by=current_user.id
+    )
+    
+    # 更新卖家状态
+    seller.status = '已分配'
+    seller.updated_at = datetime.now()
+    
+    db.session.add(assignment)
+    db.session.commit()
+    
+    flash(f'卖家 {seller.seller_name} 已成功分配', 'success')
+    return redirect(url_for('main.from_team_assignment'))
+
+@bp.route('/reject_seller/<string:seller_id>', methods=['POST'])
+@login_required
+@role_required('from_team_assignment_poc')
+def reject_seller(seller_id):
+    """拒绝分配卖家"""
+    seller = Seller.query.filter_by(seller_id=seller_id).first_or_404()
+    team_id = request.form.get('team_id', type=int)
+    note = request.form.get('note', '')
+    
+    # 获取选择的团队
+    team = Team.query.get(team_id)
+    
+    # 创建审批记录
+    from app.models.approval import Approval  # 确保导入Approval模型
+    
+    approval = Approval(
+        seller_id=seller_id,
+        approval_type='Cross team special approval',
+        applicant_id=current_user.id,
+        status='已拒绝',
+        reason=note,  # 直接使用备注作为拒绝原因
+        created_at=datetime.now(),
+        updated_at=datetime.now()
+    )
+    
+    # 更新卖家状态
+    seller.status = '已拒绝'
+    seller.updated_at = datetime.now()
+    
+    db.session.add(approval)
+    db.session.commit()
+    
+    flash(f'卖家 {seller.seller_name} 已拒绝分配并转交给团队 {team.name if team else "未知团队"}', 'success')
+    return redirect(url_for('main.from_team_assignment'))
 
 @bp.route('/from-am-approval-poc')
 @role_required('from_team_approve_poc')
 def from_am_approval_poc():
     return render_template('main/from_am_approval_poc.html', title='From AM Approval POC')
+
+
+@bp.route('/accept_seller/<int:seller_id>', methods=['POST'])
+@login_required
+def accept_seller(seller_id):
+    seller = Seller.query.get_or_404(seller_id)
+    am_id = request.form.get('am_id', type=int)
+    # 移除notes变量，因为表中没有对应字段
+    
+    # 验证AM选择
+    if not am_id:
+        flash('请选择AM', 'danger')
+        return redirect(url_for('main.from_team_assignment'))
+    
+    # 获取选择的AM用户
+    am_user = User.query.get(am_id)
+    if not am_user:
+        flash('选择的AM不存在', 'danger')
+        return redirect(url_for('main.from_team_assignment'))
+    
+    # 更新卖家状态
+    seller.status = '已分配'
+    
+    # 创建分配记录 - 移除notes参数
+    assignment = SellerAssignment(
+        seller_id=seller.seller_id,
+        am_user_id=am_id,  # 使用选择的AM ID
+        assigned_at=datetime.utcnow(),
+        assigned_by=current_user.id  # 当前用户作为分配者
+    )
+    
+    db.session.add(assignment)
+    db.session.commit()
+    
+    flash(f'已成功将卖家 {seller.seller_name} 分配给 {am_user.username}', 'success')
+    return redirect(url_for('main.from_team_assignment'))

@@ -18,6 +18,8 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
+    # 修改外键定义，添加约束名称
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id', name='fk_user_team'))
     roles = db.relationship('Role', secondary=user_roles, backref=db.backref('users', lazy='dynamic'))
     
     def set_password(self, password):
@@ -39,6 +41,8 @@ class User(UserMixin, db.Model):
         # 如果 roles 是关系字段
         return any(role.name == role_name for role in self.roles)
 
+# 删除 UserRoles 类定义
+
 # 自定义匿名用户类
 class AnonymousUser(AnonymousUserMixin):
     def has_role(self, role_name):
@@ -47,7 +51,6 @@ class AnonymousUser(AnonymousUserMixin):
 # 设置匿名用户类
 login_manager.anonymous_user = AnonymousUser
 
-# 添加用户加载器
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))

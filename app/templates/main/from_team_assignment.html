@@ -1,176 +1,228 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}From-team AM Assigment POC{% endblock %}
+{% block title %}From-team AM Assignment POC{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">From-team AM Assigment POC</h3>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>卖家ID</th>
-                                    <th>店铺名称</th>
-                                    <th>创建时间</th>
-                                    <th>状态</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% if sellers %}
-                                    {% for seller in sellers %}
-                                    <tr>
-                                        <td>{{ seller.id }}</td>
-                                        <td>{{ seller.name }}</td>
-                                        <td>{{ seller.created_at }}</td>
-                                        <td>
-                                            <span class="badge bg-warning">待分配</span>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#assignModal{{ seller.id }}" data-seller-id="{{ seller.id }}">
-                                                分配AM
-                                            </button>
-                                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ seller.id }}" data-seller-id="{{ seller.id }}">
-                                                不接受
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">From-team AM Assignment POC</h2>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>卖家ID</th>
+                        <th>店铺名称</th>
+                        <th>联系信息</th>
+                        <th>创建时间</th>
+                        <th>状态</th>
+                        <th>历史记录</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if sellers %}
+                        {% for seller in sellers %}
+                        <tr>
+                            <td>{{ seller.seller_id }}</td>
+                            <td>{{ seller.seller_name }}</td>
+                            <td>{{ seller.contact_info }}</td>
+                            <td>{{ seller.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'warning' if seller.status == '待分配' 
+                                                else 'success' if seller.status == '已接受' 
+                                                else 'danger' }}">
+                                    {{ seller.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <!-- Check if seller has any assignments or approvals -->
+                                {% if seller.assignments.count() > 0 or seller.approvals.count() > 0 %}
+                                <button class="btn btn-info btn-sm" data-bs-toggle="modal" 
+                                        data-bs-target="#historyModal{{ seller.seller_id }}">
+                                    查看历史
+                                </button>
                                 {% else %}
-                                    <tr>
-                                        <td colspan="5" class="text-center">暂无待分配的卖家</td>
-                                    </tr>
+                                无记录
                                 {% endif %}
-                            </tbody>
-                        </table>
+                            </td>
+                            <td>
+                                <button class="btn btn-success btn-sm" data-bs-toggle="modal" 
+                                        data-bs-target="#acceptModal{{ seller.seller_id }}">
+                                    接受
+                                </button>
+                                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" 
+                                        data-bs-target="#rejectModal{{ seller.seller_id }}">
+                                    拒绝
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">暂无待分配的卖家</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框部分 - 移到主循环外部 -->
+{% if sellers %}
+    {% for seller in sellers %}
+    <!-- 历史记录模态框 -->
+    <div class="modal fade" id="historyModal{{ seller.seller_id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-history me-2"></i>
+                        {{ seller.seller_name }} 的操作历史
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="timeline">
+                        {% set assignments = seller.assignments.all() %}
+                        {% set approvals = seller.approvals.all() %}
+                        
+                        {% if assignments|length == 0 and approvals|length == 0 %}
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                <p>暂无历史记录</p>
+                            </div>
+                        {% else %}
+                            {% for assignment in assignments %}
+                            <div class="timeline-item">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ assignment.assigned_at.strftime('%Y-%m-%d %H:%M') }}</h6>
+                                        <p class="card-text">
+                                            <i class="fas fa-user-check text-success me-2"></i>
+                                            分配给 <strong>{{ assignment.am_user.username if assignment.am_user else '未知用户' }}</strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                操作人：{{ assignment.assigned_by_user.username if assignment.assigned_by_user else '未知用户' }}
+                                            </small>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            {% for approval in approvals %}
+                            <div class="timeline-item">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ approval.created_at.strftime('%Y-%m-%d %H:%M') }}</h6>
+                                        <p class="card-text">
+                                            <i class="fas fa-times-circle text-danger me-2"></i>
+                                            拒绝分配
+                                            <br>
+                                            <small class="text-muted">
+                                                原因：{{ approval.reason }}<br>
+                                                操作人：{{ approval.applicant.username if approval.applicant else '未知用户' }}
+                                            </small>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-
-<!-- 分配AM的模态框 -->
-<div class="modal fade" id="assignModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">分配AM</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form method="POST" action="{{ url_for('main.from_team_assignment') }}">
-                    <input type="hidden" name="seller_id" id="assignSellerId">
-                    <input type="hidden" name="action" value="assign">
-                    <div class="mb-3">
-                        <label class="form-label">选择AM</label>
-                        <select class="form-select" name="am_id" required>
-                            <option value="">请选择...</option>
-                            {% for am in am_list %}
-                            <option value="{{ am.id }}">{{ am.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">分配备注</label>
-                        <textarea class="form-control" name="assign_remarks" rows="2" placeholder="可选填写分配原因或其他备注信息"></textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                        <button type="submit" class="btn btn-primary">确认分配</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 拒绝接受的模态框 -->
-<div class="modal fade" id="rejectModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">不接受卖家</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form method="POST" action="{{ url_for('main.from_team_assignment') }}">
-                    <input type="hidden" name="seller_id" id="rejectSellerId">
-                    <input type="hidden" name="action" value="reject">
-                    <div class="mb-3">
-                        <label class="form-label">拒绝原因</label>
-                        <select class="form-select" name="reason_code" required>
-                            <option value="">请选择...</option>
-                            <option value="not_qualified">不符合条件</option>
-                            <option value="incomplete_info">信息不完整</option>
-                            <option value="other">其他原因</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">备注说明</label>
-                        <textarea class="form-control" name="remarks" rows="3" placeholder="请详细说明拒绝原因"></textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                        <button type="submit" class="btn btn-danger">确认拒绝</button>
-                    </div>
-                </form>
+    
+    <!-- 接受卖家的模态框 -->
+    <div class="modal fade" id="acceptModal{{ seller.seller_id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">接受卖家</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>您确定要接受卖家 <strong>{{ seller.seller_name }}</strong> 吗？</p>
+                    <form method="post" action="{{ url_for('main.accept_seller', seller_id=seller.seller_id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <!-- 添加AM选择下拉框 -->
+                        <div class="mb-3">
+                            <label for="am_id" class="form-label required">请选择AM</label>
+                            <select class="form-select" id="am_id" name="am_id" required>
+                                <option value="">-- 请选择AM --</option>
+                                {% for user in am_users %}
+                                <option value="{{ user.id }}">{{ user.username }} ({{ user.team.name if user.team else '无团队' }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">备注</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="submit" class="btn btn-success">确认接受</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+    
+    <!-- 拒绝卖家的模态框 -->
+    <div class="modal fade" id="rejectModal{{ seller.seller_id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">拒绝卖家</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>您确定要拒绝卖家 <strong>{{ seller.seller_name }}</strong> 吗？</p>
+                    <form method="post" action="{{ url_for('main.reject_seller', seller_id=seller.seller_id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <!-- 添加接手团队选择 -->
+                        <div class="mb-3">
+                            <label for="team_id" class="form-label required">请选择接手团队</label>
+                            <select class="form-select" id="team_id" name="team_id" required>
+                                <option value="">-- 请选择接手团队 --</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}">{{ team.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- 移除拒绝原因下拉列表，只保留备注字段 -->
+                        <div class="mb-3">
+                            <label for="note" class="form-label required">拒绝原因</label>
+                            <textarea class="form-control" id="note" name="note" rows="3" required></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="submit" class="btn btn-danger">确认拒绝</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+{% block styles %}
+<style>
+    .required:after {
+        content: " *";
+        color: red;
+    }
+</style>
 {% endblock %}
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // 处理分配AM的模态框
-    var assignModals = document.querySelectorAll('[data-bs-target^="#assignModal"]')
-    assignModals.forEach(function(button) {
-        button.addEventListener('click', function() {
-            var sellerId = this.getAttribute('data-seller-id')
-            var modalId = this.getAttribute('data-bs-target')
-            var modal = document.querySelector(modalId)
-            if (modal) {
-                var input = modal.querySelector('#assignSellerId')
-                if (input) {
-                    input.value = sellerId
-                }
-            } else {
-                var input = document.querySelector('#assignSellerId')
-                if (input) {
-                    input.value = sellerId
-                }
-            }
-        })
-    })
-
-    // 处理拒绝的模态框
-    var rejectModals = document.querySelectorAll('[data-bs-target^="#rejectModal"]')
-    rejectModals.forEach(function(button) {
-        button.addEventListener('click', function() {
-            var sellerId = this.getAttribute('data-seller-id')
-            var modalId = this.getAttribute('data-bs-target')
-            var modal = document.querySelector(modalId)
-            if (modal) {
-                var input = modal.querySelector('#rejectSellerId')
-                if (input) {
-                    input.value = sellerId
-                }
-            } else {
-                var input = document.querySelector('#rejectSellerId')
-                if (input) {
-                    input.value = sellerId
-                }
-            }
-        })
-    })
-})
-</script>
 {% endblock %}

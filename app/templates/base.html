@@ -109,8 +109,7 @@
                             <i class="fas fa-user"></i> {{ current_user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">个人资料</a></li>
-                            <li><hr class="dropdown-divider"></li>
+                            <!-- 移除个人资料选项 -->
                             <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">退出登录</a></li>
                         </ul>
                     </li>

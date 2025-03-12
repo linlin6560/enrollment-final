@@ -1,7 +1,8 @@
 import os
 import logging
+import sys
 from logging.handlers import RotatingFileHandler
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -46,5 +47,42 @@ def create_app(config_class=Config):
     
     # 删除这行，因为已经在 api/__init__.py 中导入了路由
     # from app.api import routes
+    
+    # 配置日志系统
+    if app.debug:
+        # 设置应用日志级别为DEBUG
+        app.logger.setLevel(logging.DEBUG)
+        
+        # 创建控制台处理器，使用stdout而不是stderr以确保所有输出都显示在同一个控制台
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.DEBUG)
+        
+        # 设置日志格式
+        formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        )
+        console_handler.setFormatter(formatter)
+        
+        # 清除现有处理器并添加新的
+        for handler in app.logger.handlers:
+            app.logger.removeHandler(handler)
+        app.logger.addHandler(console_handler)
+        
+        # 确保Werkzeug日志也显示在控制台
+        werkzeug_logger = logging.getLogger('werkzeug')
+        werkzeug_logger.setLevel(logging.DEBUG)
+        
+        # 添加错误处理器
+        @app.errorhandler(Exception)
+        def handle_exception(e):
+            app.logger.error(f'未捕获的异常: {str(e)}', exc_info=True)
+            # 继续抛出异常，以便显示详细的错误页面
+            raise e
+    
+    # 添加调试信息，显示所有路由
+    @app.before_request
+    def log_request_info():
+        if app.debug:
+            app.logger.debug(f'请求路径: {request.path}')
     
     return app

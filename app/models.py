@@ -2,10 +2,21 @@ from datetime import datetime
 from app import db
 from enum import Enum
 
+# 在现有的models.py文件中添加新的模型
+
 class Seller(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    seller_id = db.Column(db.String(50), unique=True, nullable=False)
     store_name = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='待分配')  # 待分配、已接受、已拒绝
+    assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    assigned_at = db.Column(db.DateTime, nullable=True)
+    rejected_reason = db.Column(db.String(50), nullable=True)
+    am_team = db.Column(db.String(50), nullable=True)
+    
+    def __repr__(self):
+        return f'<Seller {self.store_name}>'
+    seller_id = db.Column(db.String(50), unique=True, nullable=False)
     current_team = db.Column(db.String(50))
     current_am = db.Column(db.Integer, db.ForeignKey('am.id'))
     assignment_status = db.Column(db.String(20))  # pending, accepted, rejected
