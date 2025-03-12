@@ -8,6 +8,62 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
     {% block styles %}{% endblock %}
+    <!-- 添加自定义样式 -->
+    <style>
+        .card {
+            transition: none !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .card:hover {
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .bg-info {
+            transition: none !important;
+        }
+        .bg-info:hover {
+            transform: none !important;
+            filter: none !important;
+            opacity: 1 !important;
+        }
+        
+        /* 添加新的样式规则 */
+        .nav-link, 
+        .dropdown-toggle,
+        .dropdown-menu {
+            transition: none !important;
+            transform: none !important;
+            animation: none !important;
+        }
+        
+        .nav-link:hover,
+        .dropdown-toggle:hover,
+        .dropdown-menu:hover {
+            transform: none !important;
+            animation: none !important;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        .dropdown-menu.show {
+            animation: none !important;
+            transition: none !important;
+        }
+        
+        /* 添加登录按钮相关样式 */
+        .btn-primary,
+        .btn-primary:hover,
+        .btn-primary:active,
+        .btn-primary:focus {
+            transition: none !important;
+            transform: none !important;
+            animation: none !important;
+            box-shadow: none !important;
+            filter: none !important;
+        }
+        
+        /* 其他现有样式保持不变 */
+    </style>
 </head>
 <body>
     <!-- 在导航栏部分添加以下代码 -->
