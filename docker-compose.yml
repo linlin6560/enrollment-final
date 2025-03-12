@@ -4,24 +4,9 @@ services:
     restart: always
     env_file:
       - .env
-    depends_on:
-      - db
     volumes:
       - ./app:/app/app
-    networks:
-      - enrollment-network
-
-  db:
-    image: postgres:14
-    restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    env_file:
-      - .env
-    environment:
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_DB=${DB_NAME}
+      - ./instance:/app/instance
     networks:
       - enrollment-network
 
@@ -41,6 +26,3 @@ services:
 networks:
   enrollment-network:
     driver: bridge
-
-volumes:
-  postgres_data:
