@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}From-team AM Assigment POC{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">From-team AM Assigment POC</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>卖家ID</th>
+                                    <th>店铺名称</th>
+                                    <th>创建时间</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if sellers %}
+                                    {% for seller in sellers %}
+                                    <tr>
+                                        <td>{{ seller.id }}</td>
+                                        <td>{{ seller.name }}</td>
+                                        <td>{{ seller.created_at }}</td>
+                                        <td>
+                                            <span class="badge bg-warning">待分配</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#assignModal{{ seller.id }}" data-seller-id="{{ seller.id }}">
+                                                分配AM
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ seller.id }}" data-seller-id="{{ seller.id }}">
+                                                不接受
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">暂无待分配的卖家</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 分配AM的模态框 -->
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">分配AM</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('main.from_team_assignment') }}">
+                    <input type="hidden" name="seller_id" id="assignSellerId">
+                    <input type="hidden" name="action" value="assign">
+                    <div class="mb-3">
+                        <label class="form-label">选择AM</label>
+                        <select class="form-select" name="am_id" required>
+                            <option value="">请选择...</option>
+                            {% for am in am_list %}
+                            <option value="{{ am.id }}">{{ am.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">分配备注</label>
+                        <textarea class="form-control" name="assign_remarks" rows="2" placeholder="可选填写分配原因或其他备注信息"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">确认分配</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 拒绝接受的模态框 -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">不接受卖家</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('main.from_team_assignment') }}">
+                    <input type="hidden" name="seller_id" id="rejectSellerId">
+                    <input type="hidden" name="action" value="reject">
+                    <div class="mb-3">
+                        <label class="form-label">拒绝原因</label>
+                        <select class="form-select" name="reason_code" required>
+                            <option value="">请选择...</option>
+                            <option value="not_qualified">不符合条件</option>
+                            <option value="incomplete_info">信息不完整</option>
+                            <option value="other">其他原因</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">备注说明</label>
+                        <textarea class="form-control" name="remarks" rows="3" placeholder="请详细说明拒绝原因"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-danger">确认拒绝</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 处理分配AM的模态框
+    var assignModals = document.querySelectorAll('[data-bs-target^="#assignModal"]')
+    assignModals.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var sellerId = this.getAttribute('data-seller-id')
+            var modalId = this.getAttribute('data-bs-target')
+            var modal = document.querySelector(modalId)
+            if (modal) {
+                var input = modal.querySelector('#assignSellerId')
+                if (input) {
+                    input.value = sellerId
+                }
+            } else {
+                var input = document.querySelector('#assignSellerId')
+                if (input) {
+                    input.value = sellerId
+                }
+            }
+        })
+    })
+
+    // 处理拒绝的模态框
+    var rejectModals = document.querySelectorAll('[data-bs-target^="#rejectModal"]')
+    rejectModals.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var sellerId = this.getAttribute('data-seller-id')
+            var modalId = this.getAttribute('data-bs-target')
+            var modal = document.querySelector(modalId)
+            if (modal) {
+                var input = modal.querySelector('#rejectSellerId')
+                if (input) {
+                    input.value = sellerId
+                }
+            } else {
+                var input = document.querySelector('#rejectSellerId')
+                if (input) {
+                    input.value = sellerId
+                }
+            }
+        })
+    })
+})
+</script>
+{% endblock %}

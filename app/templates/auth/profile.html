@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}编辑个人资料{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="card-title mb-4">编辑个人资料</h2>
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4 text-center">
+                            {% if current_user.avatar %}
+                            <img src="{{ url_for('static', filename=current_user.avatar) }}" class="rounded-circle mb-3" width="150" height="150" alt="头像">
+                            {% else %}
+                            <img src="{{ url_for('static', filename='images/default-avatar.png') }}" class="rounded-circle mb-3" width="150" height="150" alt="默认头像">
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                {{ form.avatar.label(class="form-label") }}
+                                {{ form.avatar(class="form-control") }}
+                                {% for error in form.avatar.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                                <div class="form-text">支持jpg、png、jpeg、gif格式的图片</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.username.label(class="form-label") }}
+                            {{ form.username(class="form-control") }}
+                            {% for error in form.username.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.bio.label(class="form-label") }}
+                            {{ form.bio(class="form-control", rows=3) }}
+                            {% for error in form.bio.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text">简单介绍一下自己吧，最多200字</div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

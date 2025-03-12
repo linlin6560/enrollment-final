@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <article class="blog-post">
+        <h1 class="blog-post-title">{{ post.title }}</h1>
+        <p class="blog-post-meta text-muted">
+            {{ moment(post.created_at).format('LL') }} by {{ post.author.username }}
+            
+            <!-- 添加删除按钮，仅文章作者可见 -->
+            {% if current_user.is_authenticated and current_user.id == post.user_id %}
+            <span class="float-end">
+                <a href="{{ url_for('main.delete_post', post_id=post.id) }}" class="btn btn-sm btn-danger" 
+                   onclick="return confirm('确定要删除这篇文章吗？此操作不可恢复！');">
+                    <i class="fas fa-trash"></i> 删除文章
+                </a>
+            </span>
+            {% endif %}
+        </p>
+        
+        <!-- 调试信息改为更美观的样式 -->
+        {% if post.image %}
+        <div class="small text-muted mb-2 d-flex align-items-center">
+            <i class="fas fa-image me-1"></i>
+            <span>图片：{{ post.image.split('/')[-1] }}</span>
+        </div>
+        {% endif %}
+        
+        <!-- 图片显示部分 -->
+        {% if post.image %}
+        <div class="text-center mb-4">
+            <img src="{{ url_for('static', filename=post.image) }}" class="img-fluid rounded shadow" alt="{{ post.title }}" style="max-height: 400px;">
+        </div>
+        {% endif %}
+        
+        {% if post.summary %}
+        <div class="lead mb-4">
+            {{ post.summary }}
+        </div>
+        {% endif %}
+        
+        <div class="blog-post-content">
+            {{ post.content|safe }}
+        </div>
+    </article>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">返回首页</a>
+    </div>
+</div>
+{% endblock %}

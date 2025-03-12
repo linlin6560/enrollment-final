@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}From AM Approval POC{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">From AM Approval POC</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4>待审批列表</h4>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>卖家ID号</th>
+                                        <th>店铺名称</th>
+                                        <th>分配时间</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>S12345</td>
+                                        <td>示例店铺1</td>
+                                        <td>2023-10-15 14:30</td>
+                                        <td><span class="badge bg-warning">待审批</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-success">审批通过</button>
+                                            <button class="btn btn-sm btn-danger">拒绝</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>S67890</td>
+                                        <td>示例店铺2</td>
+                                        <td>2023-10-16 09:45</td>
+                                        <td><span class="badge bg-warning">待审批</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-success">审批通过</button>
+                                            <button class="btn btn-sm btn-danger">拒绝</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <h4>审批历史</h4>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>示例店铺3</th>
+                                        <td><span class="badge bg-success">已通过</span></td>
+                                    </tr>
+                                    <tr>
+                                        <th>示例店铺4</th>
+                                        <td><span class="badge bg-danger">已拒绝</span></td>
+                                    </tr>
+                                </thead>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

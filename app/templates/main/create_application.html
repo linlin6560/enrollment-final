@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}新建申请{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>新建入驻申请</h1>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <form method="POST">
+                {{ form.csrf_token }}
+                
+                <div class="mb-3">
+                    <label class="form-label">卖家记号</label>
+                    <input type="text" class="form-control" name="seller_id" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">签约账户店铺名称</label>
+                    <input type="text" class="form-control" name="shop_name" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">GMS tag</label>
+                    <input type="text" class="form-control" name="gms_tag">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Rejoin tag</label>
+                    <input type="text" class="form-control" name="rejoin_tag">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Primary Category</label>
+                    <input type="text" class="form-control" name="primary_category">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">关键联系人</label>
+                    <input type="text" class="form-control" name="key_contact">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Leads/Opp Source</label>
+                    <input type="text" class="form-control" name="leads_source">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">BD</label>
+                    <input type="text" class="form-control" name="bd">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">AM Team</label>
+                    <input type="text" class="form-control" name="am_team">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">提交申请</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}Enrollment System - 首页{% endblock %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- 欢迎信息和系统概览 -->
+        <div class="col-md-12 mb-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h2 class="card-title">欢迎回来，{{ current_user.username }}</h2>
+                    <p class="card-text">今天是 {{ now.strftime('%Y年%m月%d日') }}，以下是您的系统概览</p>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="card text-white bg-primary">
+                                <div class="card-body text-center">
+                                    <h3 class="display-4">{{ pending_tasks }}</h3>
+                                    <p class="card-text">待处理任务</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-white bg-success">
+                                <div class="card-body text-center">
+                                    <h3 class="display-4">{{ completed_tasks }}</h3>
+                                    <p class="card-text">已完成任务</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-white bg-info">
+                                <div class="card-body text-center">
+                                    <h3 class="display-4">{{ total_sellers }}</h3>
+                                    <p class="card-text">卖家总数</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 待办任务列表 -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">我的待办事项</h3>
+                    <!-- 移除了按钮组 -->
+                </div>
+                <div class="card-body">
+                    {% if todo_list %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>任务类型</th>
+                                    <th>卖家信息</th>
+                                    <th>创建时间</th>
+                                    <th>截止日期</th>
+                                    <th>优先级</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in todo_list %}
+                                <tr>
+                                    <td>
+                                        {% if task.type == 'approval' %}
+                                        <span class="badge bg-info">审批</span>
+                                        {% elif task.type == 'assignment' %}
+                                        <span class="badge bg-primary">分配</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">其他</span>
+                                        {% endif %}
+                                        {{ task.title }}
+                                    </td>
+                                    <td>{{ task.seller_id }} - {{ task.seller_name }}</td>
+                                    <td>{{ task.created_at }}</td>
+                                    <td>{{ task.due_date }}</td>
+                                    <td>
+                                        {% if task.priority == 'high' %}
+                                        <span class="text-danger"><i class="fas fa-arrow-up"></i> 高</span>
+                                        {% elif task.priority == 'medium' %}
+                                        <span class="text-warning"><i class="fas fa-minus"></i> 中</span>
+                                        {% else %}
+                                        <span class="text-success"><i class="fas fa-arrow-down"></i> 低</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('main.' + task.type + '_poc', task_id=task.id) }}" class="btn btn-sm btn-primary">处理</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i> 太棒了！您目前没有待办任务。
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧信息面板 -->
+        <div class="col-md-4">
+            <!-- 快速访问 -->
+            <div class="快速访问">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">快速访问</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% if current_user.has_role('from_team_assignment_poc') %}
+                            <a href="{{ url_for('main.from_team_assignment') }}" class="list-group-item list-group-item-action">
+                                <i class="fas fa-tasks me-2"></i> From-team AM Assigment POC
+                            </a>
+                            {% endif %}
+                            
+                            {% if current_user.has_role('from_team_approve_poc') %}
+                            <a href="{{ url_for('main.from_am_approval_poc') }}" class="list-group-item list-group-item-action">
+                                <i class="fas fa-check-circle me-2"></i> From-team AM Approval POC
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if current_user.has_role('to_team_approve_poc') %}
+            <a href="{{ url_for('main.to_team_approval') }}" class="btn btn-outline-warning">
+                <i class="fas fa-thumbs-up me-2"></i>To-team AM Approve POC
+            </a>
+            {% endif %}
+            
+            {% if current_user.has_role('to_team_assignment_poc') %}
+            <a href="{{ url_for('main.to_team_assignment') }}" class="btn btn-outline-success">
+                <i class="fas fa-user-plus me-2"></i>To-team AM Assignment POC
+            </a>
+            {% endif %}
+            
+            {% if current_user.has_role('am') %}
+            <a href="{{ url_for('main.am_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-users me-2"></i>AM 卖家管理
+            </a>
+            {% endif %}
+        </div>
+        
+        <!-- 移除了最近活动和系统公告部分 -->
+    </div>
+</div>
+{% else %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">请先登录</h3>
+                </div>
+                <div class="card-body">
+                    <p>您需要登录才能访问系统功能。</p>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">前往登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 移除了按钮相关的 JavaScript 代码
+    document.addEventListener('DOMContentLoaded', function() {
+        // 这里可以添加其他需要的 JavaScript 功能
+    });
+</script>
+{% endblock %}

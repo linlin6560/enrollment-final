@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}AM Assignment POC{% endblock %}
+
+{% block styles %}
+<link href="{{ url_for('static', filename='css/enrollment.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="enrollment-container">
+    <div class="page-header">
+        <h1>AM Assignment POC</h1>
+    </div>
+
+    <div class="main-content">
+        <!-- 左侧卖家信息区域 -->
+        <div class="seller-info-section">
+            <h2>卖家基本信息</h2>
+            <div class="info-card">
+                <div class="info-group">
+                    <label>卖家记号</label>
+                    <span id="seller-id"></span>
+                </div>
+                <div class="info-group">
+                    <label>签约账户店铺名称</label>
+                    <span id="store-name"></span>
+                </div>
+                <div class="info-group">
+                    <label>GMS tag</label>
+                    <span id="gms-tag"></span>
+                </div>
+                <div class="info-group">
+                    <label>Rejoin tag</label>
+                    <span id="rejoin-tag"></span>
+                </div>
+                <div class="info-group">
+                    <label>Primary Category</label>
+                    <span id="primary-category"></span>
+                </div>
+                <div class="info-group">
+                    <label>关键联系人</label>
+                    <span id="key-contact"></span>
+                </div>
+                <div class="info-group">
+                    <label>Leads/Opp Source</label>
+                    <span id="leads-source"></span>
+                </div>
+                <div class="info-group">
+                    <label>BD</label>
+                    <span id="bd-info"></span>
+                </div>
+                <div class="info-group">
+                    <label>AM Team</label>
+                    <span id="am-team"></span>
+                </div>
+            </div>
+
+            <h2>Onboarding Survey 信息</h2>
+            <div class="survey-info">
+                <div class="survey-group">
+                    <label>1. 公司开始经营亚马逊跨境电商年份</label>
+                    <span id="amazon-start-year"></span>
+                </div>
+                <!-- 其他 Survey 字段... -->
+                <div class="survey-group">
+                    <label>14. 公司主要产品</label>
+                    <span id="main-products"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧分配操作区域 -->
+        <div class="assignment-section">
+            <h2>分配操作</h2>
+            <div class="assignment-form">
+                <div class="form-group">
+                    <label>RPA分配结果</label>
+                    <div id="rpa-result" class="info-display"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Cross-team审批状态</label>
+                    <div id="cross-team-status" class="info-display"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>目标 Assignment POC</label>
+                    <select id="target-poc" class="form-control">
+                        <option value="">请选择目标POC</option>
+                    </select>
+                </div>
+
+                <button id="submit-assignment" class="btn-primary">确认分配</button>
+            </div>
+
+            <!-- 通知设置 -->
+            <div class="notification-settings">
+                <h3>通知方式</h3>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="notify-wecom" checked>
+                    <label for="notify-wecom">企业微信通知</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="notify-email" checked>
+                    <label for="notify-email">邮件通知</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 加载卖家数据
+    async function loadSellerData() {
+        try {
+            const response = await fetch('/api/seller-data');
+            const data = await response.json();
+            updateSellerInfo(data);
+        } catch (error) {
+            console.error('加载卖家数据失败:', error);
+        }
+    }
+
+    // 更新卖家信息显示
+    function updateSellerInfo(data) {
+        // 更新基本信息
+        document.getElementById('seller-id').textContent = data.sellerId;
+        document.getElementById('store-name').textContent = data.storeName;
+        // ... 更新其他字段
+
+        // 检查RPA规则和Cross-team审批状态
+        checkAssignmentRules(data);
+    }
+
+    // 检查分配规则
+    function checkAssignmentRules(data) {
+        const rpaResult = document.getElementById('rpa-result');
+        const crossTeamStatus = document.getElementById('cross-team-status');
+
+        // 根据AM Team和Cross-team审批状态确定分配建议
+        if (data.crossTeamApproval) {
+            rpaResult.textContent = `建议分配给 ${data.toTeam} 的Assignment POC`;
+        } else {
+            rpaResult.textContent = `建议分配给 ${data.amTeam} 的Assignment POC`;
+        }
+    }
+
+    // 提交分配
+    document.getElementById('submit-assignment').addEventListener('click', async function() {
+        const targetPoc = document.getElementById('target-poc').value;
+        const notifyWecom = document.getElementById('notify-wecom').checked;
+        const notifyEmail = document.getElementById('notify-email').checked;
+
+        try {
+            const response = await fetch('/api/assign-seller', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    targetPoc,
+                    notifications: {
+                        wecom: notifyWecom,
+                        email: notifyEmail
+                    }
+                })
+            });
+
+            if (response.ok) {
+                alert('分配成功！');
+            } else {
+                throw new Error('分配失败');
+            }
+        } catch (error) {
+            alert('操作失败：' + error.message);
+        }
+    });
+
+    // 初始加载数据
+    loadSellerData();
+});
+</script>
+{% endblock %}
